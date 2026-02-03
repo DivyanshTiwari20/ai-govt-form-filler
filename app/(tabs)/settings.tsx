@@ -14,9 +14,9 @@ import {
     Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Card } from '@/components/ui/Card';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
+import { RiInformationLine, RiMailLine, RiHistoryLine, RiArrowRightSLine } from '@/components/ui/ReactIcons';
 
 export default function SettingsScreen() {
     const colors = Colors.light; // Force light mode
@@ -39,12 +39,22 @@ export default function SettingsScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+            {/* Header Section */}
+            <View style={[styles.header, { backgroundColor: '#2B6CB0' }]}>
+                <View style={styles.headerLeft}>
+                    <View>
+                        <Text style={[styles.titleEnglish, { color: '#FFFFFF' }]}>
+                            Settings
+                        </Text>
+                        <Text style={[styles.titleHindi, { color: 'rgba(255,255,255,0.8)' }]}>
+                            सेटिंग्स
+                        </Text>
+                    </View>
+                </View>
+            </View>
+
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <View style={styles.content}>
-                    {/* Header */}
-                    <View style={styles.header}>
-                        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
-                    </View>
 
                     {/* App Info Section */}
                     <View style={styles.section}>
@@ -53,38 +63,14 @@ export default function SettingsScreen() {
                         </Text>
                         <Card padding="none">
                             <SettingsItem
-                                icon="info.circle.fill"
+                                icon={RiInformationLine}
                                 title="App Version"
                                 value="1.0.0"
                                 colors={colors}
                             />
-                            <Divider colors={colors} />
-                            <SettingsItem
-                                icon="cpu.fill"
-                                title="Powered by"
-                                value="Google Gemini AI"
-                                colors={colors}
-                            />
+
                         </Card>
                     </View>
-
-                    {/* Data Section */}
-                    <View style={styles.section}>
-                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-                            DATA
-                        </Text>
-                        <Card padding="none">
-                            <SettingsItem
-                                icon="trash.fill"
-                                title="Clear Cache"
-                                colors={colors}
-                                showChevron
-                                onPress={handleClearCache}
-                                destructive
-                            />
-                        </Card>
-                    </View>
-
                     {/* Help Section */}
                     <View style={styles.section}>
                         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
@@ -92,7 +78,7 @@ export default function SettingsScreen() {
                         </Text>
                         <Card padding="none">
                             <SettingsItem
-                                icon="questionmark.circle.fill"
+                                icon={RiHistoryLine}
                                 title="How to Use"
                                 colors={colors}
                                 showChevron
@@ -103,11 +89,11 @@ export default function SettingsScreen() {
                             />
                             <Divider colors={colors} />
                             <SettingsItem
-                                icon="envelope.fill"
+                                icon={RiMailLine}
                                 title="Contact Support"
                                 colors={colors}
                                 showChevron
-                                onPress={() => Linking.openURL('mailto:support@example.com')}
+                            // onPress={() => Linking.openURL('mailto:support@example.com')}
                             />
                         </Card>
                     </View>
@@ -128,7 +114,7 @@ export default function SettingsScreen() {
 }
 
 interface SettingsItemProps {
-    icon: string;
+    icon: React.ElementType;
     title: string;
     value?: string;
     colors: typeof Colors.light;
@@ -138,7 +124,7 @@ interface SettingsItemProps {
 }
 
 function SettingsItem({
-    icon,
+    icon: Icon,
     title,
     value,
     colors,
@@ -149,7 +135,7 @@ function SettingsItem({
     const content = (
         <View style={styles.settingsItem}>
             <View style={[styles.settingsIcon, { backgroundColor: destructive ? colors.error + '20' : colors.primaryLight }]}>
-                <IconSymbol name={icon as any} size={20} color={destructive ? colors.error : colors.primary} />
+                <Icon size={20} color={destructive ? colors.error : colors.primary} />
             </View>
             <View style={styles.settingsContent}>
                 <Text style={[styles.settingsTitle, { color: destructive ? colors.error : colors.text }]}>
@@ -162,7 +148,7 @@ function SettingsItem({
                 </Text>
             )}
             {showChevron && (
-                <IconSymbol name="chevron.right" size={16} color={colors.textMuted} />
+                <RiArrowRightSLine size={16} color={colors.textMuted} />
             )}
         </View>
     );
@@ -196,11 +182,24 @@ const styles = StyleSheet.create({
         paddingBottom: Spacing.xxl,
     },
     header: {
-        marginBottom: Spacing.lg,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: Spacing.lg,
+        paddingTop: Spacing.md,
+        paddingBottom: Spacing.md,
     },
-    title: {
-        fontSize: FontSize.xxl,
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: Spacing.sm,
+    },
+    titleEnglish: {
+        fontSize: FontSize.xl,
         fontWeight: '700',
+    },
+    titleHindi: {
+        fontSize: FontSize.md,
     },
     section: {
         marginBottom: Spacing.lg,

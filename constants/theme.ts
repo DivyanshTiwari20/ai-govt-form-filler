@@ -1,56 +1,77 @@
 /**
- * Theme configuration for AI Form Filler App
- * Clean, professional color palette with soft gradients
+ * Theme configuration for Aadhaar Form Assistant
+ * India-First: Saffron accent, Deep blue primary, Clean white background
+ * Government-friendly, Trustworthy, Professional
  */
 
 import { Platform } from 'react-native';
 
-// Primary brand colors - Soft indigo/violet palette
-const primaryLight = '#6366F1'; // Indigo 500
-const primaryDark = '#818CF8';  // Indigo 400
+// India-first color palette
+const saffron = '#FF6B35';        // Saffron/Orange accent
+const deepBlue = '#1A365D';       // Deep navy blue (primary)
+const trustBlue = '#2B6CB0';      // Trustworthy blue
+const white = '#FFFFFF';          // Clean white
+const softWhite = '#FAFAFA';      // Soft white background
 
 export const Colors = {
   light: {
-    text: '#1F2937',           // Gray 800
-    textSecondary: '#6B7280',  // Gray 500
-    textMuted: '#9CA3AF',      // Gray 400
-    background: '#F9FAFB',     // Gray 50
-    surface: '#FFFFFF',
-    surfaceElevated: '#FFFFFF',
-    primary: primaryLight,
-    primaryLight: '#EEF2FF',   // Indigo 50
-    accent: '#8B5CF6',         // Violet 500
-    success: '#10B981',        // Emerald 500
-    warning: '#F59E0B',        // Amber 500
-    error: '#EF4444',          // Red 500
-    border: '#E5E7EB',         // Gray 200
-    borderLight: '#F3F4F6',    // Gray 100
-    tint: primaryLight,
-    icon: '#6B7280',
-    tabIconDefault: '#9CA3AF',
-    tabIconSelected: primaryLight,
-    shadow: 'rgba(0, 0, 0, 0.08)',
+    text: '#1A202C',              // Almost black text
+    textSecondary: '#4A5568',     // Gray 600
+    textMuted: '#718096',         // Gray 500
+    background: softWhite,        // Soft white
+    surface: white,               // Pure white cards
+    surfaceElevated: white,
+    primary: deepBlue,            // Deep blue primary
+    primaryLight: '#EBF8FF',      // Light blue tint
+    accent: saffron,              // Saffron accent
+    accentLight: '#FFF5F0',       // Light saffron
+    success: '#38A169',           // Green 500
+    successLight: '#C6F6D5',      // Green 100
+    warning: '#DD6B20',           // Orange 600
+    warningLight: '#FEEBC8',      // Orange 100
+    error: '#E53E3E',             // Red 500
+    errorLight: '#FED7D7',        // Red 100
+    border: '#E2E8F0',            // Gray 200
+    borderLight: '#EDF2F7',       // Gray 100
+    tint: deepBlue,
+    icon: '#4A5568',
+    tabIconDefault: '#A0AEC0',
+    tabIconSelected: saffron,
+    shadow: 'rgba(26, 54, 93, 0.08)',
+
+    // India-specific
+    saffron: saffron,
+    navy: deepBlue,
+    trustBlue: trustBlue,
   },
   dark: {
-    text: '#F9FAFB',           // Gray 50
-    textSecondary: '#D1D5DB',  // Gray 300
-    textMuted: '#9CA3AF',      // Gray 400
-    background: '#0F172A',     // Slate 900
-    surface: '#1E293B',        // Slate 800
-    surfaceElevated: '#334155',// Slate 700
-    primary: primaryDark,
-    primaryLight: '#312E81',   // Indigo 900
-    accent: '#A78BFA',         // Violet 400
-    success: '#34D399',        // Emerald 400
-    warning: '#FBBF24',        // Amber 400
-    error: '#F87171',          // Red 400
-    border: '#334155',         // Slate 700
-    borderLight: '#1E293B',    // Slate 800
-    tint: primaryDark,
-    icon: '#9CA3AF',
-    tabIconDefault: '#6B7280',
-    tabIconSelected: primaryDark,
+    text: '#F7FAFC',
+    textSecondary: '#CBD5E0',
+    textMuted: '#A0AEC0',
+    background: '#1A202C',
+    surface: '#2D3748',
+    surfaceElevated: '#4A5568',
+    primary: trustBlue,
+    primaryLight: '#2A4365',
+    accent: saffron,
+    accentLight: '#744210',
+    success: '#48BB78',
+    successLight: '#276749',
+    warning: '#ED8936',
+    warningLight: '#744210',
+    error: '#FC8181',
+    errorLight: '#822727',
+    border: '#4A5568',
+    borderLight: '#2D3748',
+    tint: trustBlue,
+    icon: '#A0AEC0',
+    tabIconDefault: '#718096',
+    tabIconSelected: saffron,
     shadow: 'rgba(0, 0, 0, 0.3)',
+
+    saffron: saffron,
+    navy: '#2D3748',
+    trustBlue: trustBlue,
   },
 };
 

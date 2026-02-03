@@ -1,23 +1,22 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Platform, View } from 'react-native';
+import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { Ionicons } from '@expo/vector-icons';
+import { RiChatAiLine, RiChatAiFill } from '@/components/ui/ReactIcons';
 import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors } from '@/constants/theme';
 
 export default function TabLayout() {
-  const colors = Colors.light; // Force light mode
+  const colors = Colors.light;
   const insets = useSafeAreaInsets();
 
-  // Calculate extra bottom padding for Android navigation buttons
   const bottomPadding = Platform.OS === 'android' ? Math.max(insets.bottom, 20) : insets.bottom;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.primary,
+        tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
@@ -25,9 +24,9 @@ export default function TabLayout() {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          paddingTop: 10,
-          paddingBottom: bottomPadding + 10,
-          height: 60 + bottomPadding + 10,
+          paddingTop: 8,
+          paddingBottom: bottomPadding + 8,
+          height: 60 + bottomPadding + 8,
           elevation: 8,
           shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
@@ -35,12 +34,12 @@ export default function TabLayout() {
           shadowRadius: 4,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-          marginBottom: 4,
+          fontSize: 11,
+          fontWeight: '600',
+          marginBottom: 2,
         },
         tabBarIconStyle: {
-          marginTop: 4,
+          marginTop: 2,
         },
       }}>
       <Tabs.Screen
@@ -48,11 +47,24 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={26}
-              name={focused ? 'house.fill' : 'house'}
+            <Ionicons
+              name={focused ? 'home' : 'home-outline'}
+              size={24}
               color={color}
             />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="ai-chat"
+        options={{
+          title: 'AI Chat',
+          tabBarIcon: ({ color, focused }) => (
+            focused ? (
+              <RiChatAiFill size={24} color={color} />
+            ) : (
+              <RiChatAiLine size={24} color={color} />
+            )
           ),
         }}
       />
@@ -61,9 +73,9 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol
-              size={26}
-              name={focused ? 'gearshape.fill' : 'gearshape'}
+            <Ionicons
+              name={focused ? 'settings' : 'settings-outline'}
+              size={24}
               color={color}
             />
           ),

@@ -1,6 +1,5 @@
 /**
- * Home Screen - MVP Version
- * User selects form type, then uploads image
+ * Home Screen - Form Selection with India-First UI & AI Assist Toggle
  */
 
 import React, { useState } from 'react';
@@ -8,172 +7,314 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   TouchableOpacity,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Button } from '@/components/ui/Button';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Card } from '@/components/ui/Card';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
-import { getFormTemplate, getAvailableFormTypes, AnalysisResult } from '@/services/gemini';
+import { getFormTemplate, getAvailableFormTypes } from '@/services/gemini';
+import { translations } from '@/services/i18n';
 
 export default function HomeScreen() {
   const colors = Colors.light;
   const router = useRouter();
-
-  const [selectedFormType, setSelectedFormType] = useState<string | null>(null);
   const formTypes = getAvailableFormTypes();
+  const [language, setLanguage] = useState<'hi' | 'en'>('en');
+  const [aiAssistEnabled, setAiAssistEnabled] = useState(false);
 
-  const pickImage = async (useCamera: boolean = false) => {
-    if (!selectedFormType) {
-      Alert.alert('Select Form Type', 'Please select the type of form first.');
-      return;
-    }
+  const selectForm = (formType: string) => {
+    const formTemplate = getFormTemplate(formType);
 
-    try {
-      let result;
+    router.push({
+      pathname: '/form-input',
+      params: {
+        formName: formTemplate.formName,
+        formType: formType,
+        fields: JSON.stringify(formTemplate.fields),
+        aiAssist: aiAssistEnabled ? 'true' : 'false',
+      },
+    });
+  };
 
-      if (useCamera) {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        if (!permission.granted) {
-          Alert.alert('Permission needed', 'Camera permission is required.');
-          return;
-        }
-        result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ['images'],
-          allowsEditing: false,
-          quality: 0.8,
-        });
-      } else {
-        result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ['images'],
-          allowsEditing: false,
-          quality: 0.8,
-        });
-      }
-
-      if (!result.canceled && result.assets[0]) {
-        const imageUri = result.assets[0].uri;
-        const formTemplate = getFormTemplate(selectedFormType);
-
-        // Navigate directly to form input - no API call needed!
-        router.push({
-          pathname: '/form-input',
-          params: {
-            imageUri: imageUri,
-            formName: formTemplate.formName,
-            fields: JSON.stringify(formTemplate.fields),
-          },
-        });
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Error', 'Failed to pick image. Please try again.');
-    }
+  const toggleLanguage = () => {
+    setLanguage(language === 'hi' ? 'en' : 'hi');
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            Form Filler
-          </Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            Fill government forms easily
-          </Text>
+      <View style={styles.mainContent}>
+        {/* Header Section */}
+        <View style={[styles.header, { backgroundColor: '#2B6CB0' }]}>
+          <View style={styles.headerLeft}>
+            <View>
+              <Text style={[styles.titleEnglish, { color: '#FFFFFF' }]}>
+                Aadhaar Form Assistant
+              </Text>
+              <Text style={[styles.titleHindi, { color: 'rgba(255,255,255,0.8)' }]}>
+                आधार फॉर्म सहायक
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            onPress={toggleLanguage}
+            style={[styles.langToggle, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+          >
+            <Text style={[styles.langToggleText, { color: '#FFFFFF' }]}>
+              {language === 'en' ? 'हिं' : 'EN'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Step 1: Select Form Type */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            STEP 1: Select Form Type
-          </Text>
-          <View style={styles.formTypeGrid}>
-            {formTypes.map((formType) => (
-              <TouchableOpacity
-                key={formType.id}
-                style={[
-                  styles.formTypeCard,
-                  {
-                    backgroundColor: selectedFormType === formType.id ? colors.primary : colors.surface,
-                    borderColor: selectedFormType === formType.id ? colors.primary : colors.border,
-                  }
-                ]}
-                onPress={() => setSelectedFormType(formType.id)}
-                activeOpacity={0.7}
-              >
-                <IconSymbol
-                  name="doc.text.fill"
-                  size={24}
-                  color={selectedFormType === formType.id ? '#FFFFFF' : colors.primary}
-                />
-                <Text
-                  style={[
-                    styles.formTypeName,
-                    { color: selectedFormType === formType.id ? '#FFFFFF' : colors.text }
-                  ]}
-                  numberOfLines={2}
-                >
-                  {formType.name}
+        <View style={styles.body}>
+
+          {/* AI Assist Toggle */}
+          <Card style={[
+            styles.aiToggleCard,
+            {
+              borderColor: aiAssistEnabled ? colors.success : colors.border,
+              backgroundColor: aiAssistEnabled ? '#F0FFF4' : colors.surface,
+            }
+          ]}>
+            <View style={styles.aiToggleContent}>
+              <View style={[
+                styles.aiIconBg,
+                { backgroundColor: aiAssistEnabled ? '#C6F6D5' : colors.border }
+              ]}>
+                <Text style={styles.aiIcon}>🤖</Text>
+              </View>
+              <View style={styles.aiToggleInfo}>
+                <Text style={[styles.aiToggleTitleEn, { color: colors.text }]}>
+                  {translations.aiAssist.en}
                 </Text>
+                <Text style={[styles.aiToggleTitleHi, { color: colors.textSecondary }]}>
+                  {translations.aiAssist.hi}
+                </Text>
+                <Text style={[styles.aiToggleDesc, { color: colors.textMuted }]}>
+                  {language === 'en'
+                    ? 'Helps format names & addresses'
+                    : 'नाम और पता सुधारने में मदद'
+                  }
+                </Text>
+              </View>
+              <Switch
+                value={aiAssistEnabled}
+                onValueChange={setAiAssistEnabled}
+                trackColor={{ false: '#E2E8F0', true: '#68D391' }}
+                thumbColor={aiAssistEnabled ? '#38A169' : '#CBD5E0'}
+              />
+            </View>
+            {aiAssistEnabled && (
+              <View style={[styles.aiStatusBanner, { backgroundColor: '#C6F6D5' }]}>
+                <Text style={{ color: '#276749', fontWeight: '700' }}>✓</Text>
+                <Text style={[styles.aiStatusText, { color: '#276749' }]}>
+                  {language === 'en' ? 'AI Assist is ON' : 'AI सहायता चालू है'}
+                </Text>
+              </View>
+            )}
+          </Card>
+
+          {/* Subtitle */}
+          <View style={styles.subtitleContainer}>
+            <Text style={[styles.subtitleEnglish, { color: colors.textSecondary }]}>
+              {language === 'en' ? 'Select form to fill' : 'भरने के लिए फॉर्म चुनें'}
+            </Text>
+          </View>
+
+          {/* Form Selection */}
+          <View style={styles.formList}>
+            {formTypes.map((form) => (
+              <TouchableOpacity
+                key={form.id}
+                activeOpacity={0.7}
+                onPress={() => selectForm(form.id)}
+              >
+                <Card style={[styles.formCard, { borderColor: colors.border }]}>
+                  <View style={styles.formCardContent}>
+                    <View style={[styles.iconCircle, { backgroundColor: colors.accentLight }]}>
+                      <Text style={styles.iconEmoji}>{form.icon}</Text>
+                    </View>
+                    <View style={styles.formInfo}>
+                      <Text style={[styles.formTitleEn, { color: colors.text }]}>
+                        {form.name} Form
+                      </Text>
+                      <Text style={[styles.formTitleHi, { color: colors.textSecondary }]}>
+                        आधार कार्ड फॉर्म
+                      </Text>
+                      <Text style={[styles.formDescription, { color: colors.accent }]}>
+                        {language === 'en' ? 'Start filling →' : 'शुरू करें →'}
+                      </Text>
+                    </View>
+                    <View style={[styles.arrowCircle, { backgroundColor: colors.primary }]}>
+                      <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+                    </View>
+                  </View>
+                </Card>
               </TouchableOpacity>
             ))}
           </View>
-        </View>
 
-        {/* Step 2: Upload Form */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-            STEP 2: Upload Your Form
-          </Text>
-          <Card style={styles.uploadCard}>
-            <View style={[styles.iconContainer, { backgroundColor: colors.primaryLight }]}>
-              <IconSymbol name="camera.fill" size={40} color={colors.primary} />
+          {/* Info Card: How It Works */}
+          <Card style={styles.infoCard}>
+            <View style={styles.infoHeader}>
+              <View style={[styles.infoIconBg, { backgroundColor: colors.primaryLight }]}>
+                <Ionicons name="information-circle" size={24} color={colors.primary} />
+              </View>
+              <View>
+                <Text style={[styles.infoTitle, { color: colors.text }]}>
+                  {language === 'en' ? 'How it works?' : 'कैसे काम करता है?'}
+                </Text>
+              </View>
             </View>
-
-            <Text style={[styles.cardDescription, { color: colors.textSecondary }]}>
-              Take a photo or select the form you want to fill
-            </Text>
-
-            <View style={styles.buttonGroup}>
-              <Button
-                title="Take Photo"
-                onPress={() => pickImage(true)}
-                variant="primary"
-                fullWidth
-                disabled={!selectedFormType}
-                icon={<IconSymbol name="camera.fill" size={20} color="#FFFFFF" />}
-                style={styles.button}
-              />
-              <Button
-                title="Choose from Gallery"
-                onPress={() => pickImage(false)}
-                variant="outline"
-                fullWidth
-                disabled={!selectedFormType}
-                icon={<IconSymbol name="photo.fill" size={20} color={colors.primary} />}
-                style={styles.button}
-              />
+            <View style={styles.stepsContainer}>
+              <View style={styles.stepRow}>
+                <View style={[styles.stepNumber, { backgroundColor: colors.accent }]}>
+                  <Text style={styles.stepNumberText}>1</Text>
+                </View>
+                <View style={styles.stepTextContainer}>
+                  <Text style={[styles.stepTextEn, { color: colors.text }]}>
+                    Answer simple questions
+                  </Text>
+                  <Text style={[styles.stepTextHi, { color: colors.textSecondary }]}>
+                    सवालों के जवाब दें
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.stepRow}>
+                <View style={[styles.stepNumber, { backgroundColor: colors.accent }]}>
+                  <Text style={styles.stepNumberText}>2</Text>
+                </View>
+                <View style={styles.stepTextContainer}>
+                  <Text style={[styles.stepTextEn, { color: colors.text }]}>
+                    {aiAssistEnabled ? 'AI will improve your answers' : 'See your filled form'}
+                  </Text>
+                  <Text style={[styles.stepTextHi, { color: colors.textSecondary }]}>
+                    {aiAssistEnabled ? 'AI आपके जवाब सुधारेगा' : 'भरा हुआ फॉर्म देखें'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.stepRow}>
+                <View style={[styles.stepNumber, { backgroundColor: colors.accent }]}>
+                  <Text style={styles.stepNumberText}>3</Text>
+                </View>
+                <View style={styles.stepTextContainer}>
+                  <Text style={[styles.stepTextEn, { color: colors.text }]}>
+                    Share or Save your form
+                  </Text>
+                  <Text style={[styles.stepTextHi, { color: colors.textSecondary }]}>
+                    शेयर करें या फॉर्म सेव करें
+                  </Text>
+                </View>
+              </View>
             </View>
-
-            {!selectedFormType && (
-              <Text style={[styles.hintText, { color: colors.textMuted }]}>
-                ☝️ Select a form type above first
-              </Text>
-            )}
           </Card>
+
+          {/* AI Features Card - Show when AI is enabled */}
+          {aiAssistEnabled && (
+            <Card style={[styles.infoCard, { borderLeftWidth: 4, borderLeftColor: colors.success }]}>
+              <View style={styles.infoHeader}>
+                <Text style={styles.aiFeatureEmoji}>✨</Text>
+                <View>
+                  <Text style={[styles.infoTitle, { color: colors.success }]}>
+                    {language === 'hi' ? 'AI क्या करेगा?' : 'What AI will do?'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.reasonsList}>
+                <View style={styles.reasonItem}>
+                  <Text style={styles.reasonBullet}>•</Text>
+                  <Text style={[styles.reasonText, { color: colors.text }]}>
+                    {language === 'hi'
+                      ? 'नाम को सही CAPITAL LETTERS में बदलेगा'
+                      : 'Convert names to proper CAPITAL LETTERS'
+                    }
+                  </Text>
+                </View>
+                <View style={styles.reasonItem}>
+                  <Text style={styles.reasonBullet}>•</Text>
+                  <Text style={[styles.reasonText, { color: colors.text }]}>
+                    {language === 'hi'
+                      ? 'पता को सही format में लिखेगा'
+                      : 'Format address properly'
+                    }
+                  </Text>
+                </View>
+                <View style={styles.reasonItem}>
+                  <Text style={styles.reasonBullet}>•</Text>
+                  <Text style={[styles.reasonText, { color: colors.text }]}>
+                    {language === 'hi'
+                      ? 'Initials को पूरे नाम में expand करेगा'
+                      : 'Expand initials to full names'
+                    }
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.aiNote, { color: colors.textMuted }]}>
+                {language === 'hi'
+                  ? '⚡ इंटरनेट आवश्यक • कम डेटा उपयोग'
+                  : '⚡ Requires internet • Low data usage'
+                }
+              </Text>
+            </Card>
+          )}
+
+          {/* Info Card: Why Forms Get Rejected */}
+          {/* <Card style={[styles.infoCard, { borderLeftWidth: 4, borderLeftColor: colors.warning }]}>
+          <View style={styles.infoHeader}>
+            <Text style={styles.warningEmoji}>⚠️</Text>
+            <View>
+              <Text style={[styles.infoTitle, { color: colors.warning }]}>
+                {translations.whyRejected.title[language]}
+              </Text>
+            </View>
+          </View>
+          <View style={styles.reasonsList}>
+            {translations.whyRejected.reasons.slice(0, 3).map((reason, index) => (
+              <View key={index} style={styles.reasonItem}>
+                <Text style={styles.reasonBullet}>•</Text>
+                <Text style={[styles.reasonText, { color: colors.text }]}>
+                  {reason[language]}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </Card> */}
+
+          {/* Coming Soon */}
+          {/* <View style={styles.comingSoon}>
+          <Text style={[styles.comingSoonTitle, { color: colors.textMuted }]}>
+            {language === 'hi' ? 'जल्द आ रहा है' : 'Coming Soon'}
+          </Text>
+          <View style={styles.comingSoonForms}>
+            <View style={[styles.comingSoonBadge, { backgroundColor: colors.border }]}>
+              <Text style={styles.comingSoonText}>💳 PAN Card</Text>
+            </View>
+            <View style={[styles.comingSoonBadge, { backgroundColor: colors.border }]}>
+              <Text style={styles.comingSoonText}>📘 Passport</Text>
+            </View>
+            <View style={[styles.comingSoonBadge, { backgroundColor: colors.border }]}>
+              <Text style={styles.comingSoonText}>🗳️ Voter ID</Text>
+            </View>
+          </View>
+        </View> */}
         </View>
-      </ScrollView>
+
+        {/* Footer Trust Badge */}
+        {/* <View style={styles.footer}>
+          <View style={styles.trustBadgeCompact}>
+            <Ionicons name="shield-checkmark" size={14} color={colors.success} />
+            <Text style={[styles.trustText, { color: colors.textMuted }]}>
+              {language === 'hi'
+                ? 'आपका डेटा सुरक्षित है • ऑफलाइन काम करता है'
+                : 'Your data is secure • Works offline'
+              }
+            </Text>
+          </View>
+        </View> */}
+      </View>
     </SafeAreaView>
   );
 }
@@ -185,81 +326,267 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  mainContent: {
+    flex: 1,
+  },
+  body: {
+    flex: 1,
+    padding: Spacing.md,
+  },
   content: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    padding: Spacing.md,
   },
   header: {
-    marginBottom: Spacing.xl,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: FontSize.hero,
-    fontWeight: '700',
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontSize: FontSize.md,
-    marginTop: Spacing.xs,
-  },
-  section: {
-    marginBottom: Spacing.xl,
-  },
-  sectionLabel: {
-    fontSize: FontSize.xs,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.md,
-    marginLeft: Spacing.xs,
-  },
-  formTypeGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
   },
-  formTypeCard: {
-    width: '48%',
-    paddingVertical: Spacing.md,
+  accentBar: {
+    width: 4,
+    height: 40,
+    borderRadius: 2,
+  },
+  titleEnglish: {
+    fontSize: FontSize.xl,
+    fontWeight: '700',
+  },
+  titleHindi: {
+    fontSize: FontSize.md,
+  },
+  langToggle: {
     paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    borderWidth: 1.5,
+  },
+  langToggleText: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  aiToggleCard: {
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+    borderWidth: 2,
+  },
+  aiToggleContent: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
   },
-  formTypeName: {
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  uploadCard: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
-  },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: BorderRadius.xl,
+  aiIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  aiIcon: {
+    fontSize: 24,
+  },
+  aiToggleInfo: {
+    flex: 1,
+  },
+  aiToggleTitleEn: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  aiToggleTitleHi: {
+    fontSize: FontSize.sm,
+  },
+  aiToggleDesc: {
+    fontSize: FontSize.xs,
+    marginTop: 2,
+  },
+  aiStatusBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+  },
+  aiStatusText: {
+    fontSize: FontSize.xs,
+    fontWeight: '600',
+  },
+  subtitleContainer: {
     marginBottom: Spacing.md,
   },
-  cardDescription: {
+  subtitleEnglish: {
     fontSize: FontSize.md,
-    textAlign: 'center',
-    lineHeight: 22,
+  },
+  formList: {
+    gap: Spacing.md,
     marginBottom: Spacing.lg,
   },
-  buttonGroup: {
-    width: '100%',
+  formCard: {
+    padding: Spacing.lg,
+    borderWidth: 1,
+  },
+  formCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  iconEmoji: {
+    fontSize: 32,
+  },
+  formInfo: {
+    flex: 1,
+  },
+  formTitleEn: {
+    fontSize: FontSize.lg,
+    fontWeight: '700',
+  },
+  formTitleHi: {
+    fontSize: FontSize.sm,
+    marginBottom: Spacing.xs,
+  },
+  formDescription: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
+  arrowCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infoCard: {
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  infoIconBg: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  warningEmoji: {
+    fontSize: 24,
+  },
+  aiFeatureEmoji: {
+    fontSize: 24,
+  },
+  infoTitle: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  stepsContainer: {
+    gap: Spacing.sm,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.md,
   },
-  button: {
-    marginBottom: 0,
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  hintText: {
+  stepNumberText: {
+    color: '#FFFFFF',
     fontSize: FontSize.sm,
-    marginTop: Spacing.md,
+    fontWeight: '700',
+  },
+  stepTextContainer: {
+    flex: 1,
+  },
+  stepTextEn: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
+  stepTextHi: {
+    fontSize: FontSize.xs,
+  },
+  reasonsList: {
+    gap: Spacing.xs,
+  },
+  reasonItem: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  reasonBullet: {
+    fontSize: FontSize.md,
+  },
+  reasonText: {
+    fontSize: FontSize.sm,
+    flex: 1,
+  },
+  aiNote: {
+    fontSize: FontSize.xs,
+    marginTop: Spacing.sm,
     textAlign: 'center',
+  },
+  comingSoon: {
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+  },
+  comingSoonTitle: {
+    fontSize: FontSize.sm,
+    marginBottom: Spacing.sm,
+  },
+  comingSoonForms: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  comingSoonBadge: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+  },
+  comingSoonText: {
+    fontSize: FontSize.sm,
+    color: '#666',
+  },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  trustText: {
+    fontSize: FontSize.xs,
+  },
+  footer: {
+    padding: Spacing.md,
+    borderTopWidth: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  trustBadgeCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
   },
 });

@@ -1,6 +1,6 @@
 /**
  * Form Input Screen
- * Dynamic step-by-step input for form fields
+ * Dynamic step-by-step input with validation, bilingual labels, and AI assist
  */
 
 import React, { useState, useEffect } from 'react';
@@ -11,30 +11,37 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
-    Alert,
     TouchableOpacity,
+    TextInput,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
-import { FormField, generateFilledForm } from '@/services/gemini';
+import { FormField } from '@/services/gemini';
+import { getValidator, formatName, formatDate, formatMobile, calculateReadinessScore } from '@/services/validation';
+import { translations } from '@/services/i18n';
+import { processFieldWithAI } from '@/services/aiAssist';
 
 export default function FormInputScreen() {
-    const colors = Colors.light; // Force light mode
+    const colors = Colors.light;
     const router = useRouter();
     const params = useLocalSearchParams();
 
     const [currentStep, setCurrentStep] = useState(0);
     const [formData, setFormData] = useState<Record<string, string>>({});
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isProcessingAI, setIsProcessingAI] = useState(false);
     const [fields, setFields] = useState<FormField[]>([]);
+    const [validationError, setValidationError] = useState<{ hi: string; en: string } | null>(null);
+    const [language, setLanguage] = useState<'hi' | 'en'>('en');
 
-    const imageUri = params.imageUri as string;
     const formName = params.formName as string || 'Form';
+    const formType = params.formType as string || 'generic';
+    const aiAssistEnabled = params.aiAssist === 'true';
 
     useEffect(() => {
         if (params.fields) {
@@ -51,12 +58,98 @@ export default function FormInputScreen() {
     const totalSteps = fields.length;
     const progress = totalSteps > 0 ? ((currentStep + 1) / totalSteps) * 100 : 0;
 
+    // Get bilingual label
+    const getBilingualLabel = (label: string) => {
+        // Map common field labels to Hindi
+        const labelMap: Record<string, string> = {
+            'Full Name (as per documents)': 'पूरा नाम (दस्तावेज़ों के अनुसार)',
+            'Gender': 'लिंग',
+            'Date of Birth (DD/MM/YYYY)': 'जन्म तिथि (DD/MM/YYYY)',
+            'Age (in years)': 'उम्र (वर्षों में)',
+            'Date of Birth is': 'जन्म तिथि',
+            'Father/Mother/Spouse/Guardian Name': 'पिता/माता/पति/अभिभावक का नाम',
+            'House No / Building / Apartment': 'मकान नं / भवन / अपार्टमेंट',
+            'Street / Road / Lane': 'गली / सड़क / लेन',
+            'Landmark': 'लैंडमार्क',
+            'Area / Locality / Sector': 'क्षेत्र / इलाका / सेक्टर',
+            'Village / Town / City': 'गांव / कस्बा / शहर',
+            'Post Office': 'डाकघर',
+            'District': 'जिला',
+            'Sub-District / Tehsil': 'उप-जिला / तहसील',
+            'State': 'राज्य',
+            'PIN Code': 'पिन कोड',
+            'Mobile Number': 'मोबाइल नंबर',
+            'Email ID (Optional)': 'ईमेल आईडी (वैकल्पिक)',
+            'Proof of Identity Document': 'पहचान प्रमाण दस्तावेज़',
+            'Proof of Address Document': 'पता प्रमाण दस्तावेज़',
+            'Date of Birth Proof Document': 'जन्म तिथि प्रमाण दस्तावेज़',
+            'Proof of Relationship Document (if any)': 'संबंध प्रमाण दस्तावेज़ (यदि कोई हो)',
+            'Allow UIDAI to share your info with agencies?': 'UIDAI को आपकी जानकारी एजेंसियों से साझा करने की अनुमति?',
+            'Link Aadhaar with your bank account?': 'आधार को अपने बैंक खाते से लिंक करें?',
+            'Bank Name (if linking)': 'बैंक का नाम (यदि लिंक कर रहे हैं)',
+            'Pre-Enrolment ID (if any)': 'पूर्व-नामांकन आईडी (यदि कोई हो)',
+            "Parent/Guardian/Spouse Full Name": 'माता-पिता/अभिभावक/पति/पत्नी का पूरा नाम',
+            "Their Aadhaar Number (if known)": 'उनका आधार नंबर (यदि पता हो)',
+        };
+
+        const hindiLabel = labelMap[label] || label;
+        return { hi: hindiLabel, en: label };
+    };
+
+    // Auto-format input based on field type
+    const formatInput = (value: string, fieldId: string): string => {
+        if (fieldId.includes('name') || fieldId === 'care_of') {
+            return formatName(value);
+        }
+        if (fieldId === 'date_of_birth' || fieldId.includes('date')) {
+            return formatDate(value);
+        }
+        if (fieldId === 'mobile') {
+            return formatMobile(value);
+        }
+        if (fieldId === 'pincode') {
+            return value.replace(/\D/g, '').slice(0, 6);
+        }
+        return value;
+    };
+
+    const handleInputChange = (value: string) => {
+        if (!currentField) return;
+
+        // Auto-format the input
+        const formattedValue = formatInput(value, currentField.id);
+        setFormData({ ...formData, [currentField.id]: formattedValue });
+
+        // Validate in real-time
+        const validator = getValidator(currentField.id);
+        const result = validator(formattedValue);
+
+        if (!result.isValid && result.error) {
+            setValidationError(result.error);
+        } else {
+            setValidationError(null);
+        }
+    };
+
     const handleNext = () => {
-        // Validate current field if required
+        // Check if required field is empty
         if (currentField?.required && !formData[currentField.id]?.trim()) {
-            Alert.alert('Required Field', `Please fill in ${currentField.label}`);
+            setValidationError(translations.validation.fieldRequired);
             return;
         }
+
+        // Validate current field
+        if (currentField) {
+            const validator = getValidator(currentField.id);
+            const result = validator(formData[currentField.id] || '');
+
+            if (!result.isValid && result.error) {
+                setValidationError(result.error);
+                return;
+            }
+        }
+
+        setValidationError(null);
 
         if (currentStep < totalSteps - 1) {
             setCurrentStep(currentStep + 1);
@@ -66,6 +159,7 @@ export default function FormInputScreen() {
     };
 
     const handleBack = () => {
+        setValidationError(null);
         if (currentStep > 0) {
             setCurrentStep(currentStep - 1);
         } else {
@@ -73,34 +167,50 @@ export default function FormInputScreen() {
         }
     };
 
-    const handleInputChange = (value: string) => {
+    const handleSelectOption = (option: string) => {
         if (currentField) {
-            setFormData({ ...formData, [currentField.id]: value });
+            setFormData({ ...formData, [currentField.id]: option });
+            setValidationError(null);
         }
     };
 
     const handleGenerate = async () => {
         setIsGenerating(true);
+
         try {
-            // Navigate to result screen with form data
+            let finalFormData = formData;
+
+            // Process with AI if enabled
+            if (aiAssistEnabled) {
+                setIsProcessingAI(true);
+                const { processFormDataWithAI } = await import('@/services/aiAssist');
+                finalFormData = await processFormDataWithAI(formData, true);
+                setIsProcessingAI(false);
+            }
+
+            // Calculate readiness score
+            const { score } = calculateReadinessScore(finalFormData, fields);
+
             router.replace({
                 pathname: '/result',
                 params: {
-                    imageUri: imageUri,
+                    formType: formType,
                     formName: formName,
-                    formData: JSON.stringify(formData),
+                    formData: JSON.stringify(finalFormData),
+                    fields: JSON.stringify(fields),
+                    readinessScore: score.toString(),
+                    aiAssisted: aiAssistEnabled ? 'true' : 'false',
                 },
             });
-        } catch (error: any) {
-            Alert.alert('Generation Failed', error.message || 'Could not generate the filled form.');
+        } catch (error) {
+            console.error('Error generating form:', error);
             setIsGenerating(false);
+            setIsProcessingAI(false);
         }
     };
 
-    const handleSelectOption = (option: string) => {
-        if (currentField) {
-            setFormData({ ...formData, [currentField.id]: option });
-        }
+    const toggleLanguage = () => {
+        setLanguage(language === 'hi' ? 'en' : 'hi');
     };
 
     if (fields.length === 0) {
@@ -115,26 +225,33 @@ export default function FormInputScreen() {
         );
     }
 
+    const bilingualLabel = getBilingualLabel(currentField?.label || '');
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
-                {/* Header */}
+                {/* Header with Language Toggle */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={handleBack} style={styles.backButton}>
                         <IconSymbol name="chevron.left" size={24} color={colors.text} />
                     </TouchableOpacity>
                     <View style={styles.headerCenter}>
-                        <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
-                            {formName}
-                        </Text>
                         <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-                            Step {currentStep + 1} of {totalSteps}
+                            {translations.question[language]} {currentStep + 1} / {totalSteps}
                         </Text>
                     </View>
-                    <View style={styles.headerRight} />
+                    {/* Language Toggle */}
+                    <TouchableOpacity
+                        onPress={toggleLanguage}
+                        style={[styles.langToggle, { backgroundColor: colors.accentLight }]}
+                    >
+                        <Text style={[styles.langToggleText, { color: colors.accent }]}>
+                            {language === 'hi' ? 'EN' : 'हिं'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Progress Bar */}
@@ -143,11 +260,24 @@ export default function FormInputScreen() {
                         <View
                             style={[
                                 styles.progressFill,
-                                { backgroundColor: colors.primary, width: `${progress}%` }
+                                { backgroundColor: colors.accent, width: `${progress}%` }
                             ]}
                         />
                     </View>
                 </View>
+
+                {/* AI Assist Indicator */}
+                {aiAssistEnabled && (
+                    <View style={[styles.aiIndicator, { backgroundColor: '#C6F6D5' }]}>
+                        <Text style={styles.aiIndicatorIcon}>🤖</Text>
+                        <Text style={[styles.aiIndicatorText, { color: '#276749' }]}>
+                            {language === 'en' ? 'AI Assist ON' : 'AI सहायता चालू'}
+                        </Text>
+                        {isProcessingAI && (
+                            <ActivityIndicator size="small" color="#276749" style={{ marginLeft: 8 }} />
+                        )}
+                    </View>
+                )}
 
                 <ScrollView
                     style={styles.scrollView}
@@ -157,21 +287,30 @@ export default function FormInputScreen() {
                 >
                     {/* Current Field Card */}
                     <Card style={styles.fieldCard}>
-                        <View style={[styles.fieldIconContainer, { backgroundColor: colors.primaryLight }]}>
-                            <IconSymbol
-                                name={currentField?.type === 'date' ? 'calendar' : 'pencil'}
-                                size={28}
-                                color={colors.primary}
-                            />
+                        {/* Bilingual Label */}
+                        <View style={styles.labelContainer}>
+                            <Text style={[styles.labelEnglish, { color: colors.text }]}>
+                                {bilingualLabel.en}
+                            </Text>
+                            <Text style={[styles.labelHindi, { color: colors.textSecondary }]}>
+                                {bilingualLabel.hi}
+                            </Text>
+                            {currentField?.required ? (
+                                <View style={[styles.requiredBadge, { backgroundColor: colors.errorLight }]}>
+                                    <Text style={[styles.requiredText, { color: colors.error }]}>
+                                        आवश्यक / Required
+                                    </Text>
+                                </View>
+                            ) : (
+                                <View style={[styles.optionalBadge, { backgroundColor: colors.border }]}>
+                                    <Text style={[styles.optionalText, { color: colors.textMuted }]}>
+                                        वैकल्पिक / Optional
+                                    </Text>
+                                </View>
+                            )}
                         </View>
 
-                        <Text style={[styles.fieldLabel, { color: colors.text }]}>
-                            {currentField?.label}
-                            {currentField?.required && (
-                                <Text style={{ color: colors.error }}> *</Text>
-                            )}
-                        </Text>
-
+                        {/* Input or Options */}
                         {currentField?.type === 'select' && currentField.options ? (
                             <View style={styles.optionsContainer}>
                                 {currentField.options.map((option) => (
@@ -206,40 +345,106 @@ export default function FormInputScreen() {
                                 ))}
                             </View>
                         ) : (
-                            <Input
+                            <TextInput
+                                style={[
+                                    styles.input,
+                                    {
+                                        borderColor: validationError ? colors.error : colors.border,
+                                        backgroundColor: colors.surface,
+                                        color: colors.text,
+                                    }
+                                ]}
                                 value={formData[currentField?.id || ''] || ''}
                                 onChangeText={handleInputChange}
                                 placeholder={currentField?.placeholder}
-                                keyboardType={currentField?.type === 'number' ? 'numeric' : 'default'}
+                                placeholderTextColor={colors.textMuted}
+                                keyboardType={
+                                    currentField?.id === 'mobile' || currentField?.id === 'pincode' || currentField?.id === 'age'
+                                        ? 'numeric'
+                                        : 'default'
+                                }
+                                autoCapitalize={
+                                    currentField?.id.includes('name') || currentField?.id === 'care_of'
+                                        ? 'characters'
+                                        : 'sentences'
+                                }
                                 autoFocus
-                                containerStyle={styles.inputContainer}
                             />
+                        )}
+
+                        {/* Validation Error */}
+                        {validationError && (
+                            <View style={[styles.errorContainer, { backgroundColor: colors.errorLight }]}>
+                                <IconSymbol name="exclamationmark.triangle.fill" size={16} color={colors.error} />
+                                <View style={styles.errorTextContainer}>
+                                    <Text style={[styles.errorTextEnglish, { color: colors.error }]}>
+                                        {validationError.en}
+                                    </Text>
+                                    <Text style={[styles.errorTextHindi, { color: colors.error }]}>
+                                        {validationError.hi}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Quick Tip */}
+                        {currentField?.placeholder && !validationError && (
+                            <View style={[styles.tipContainer, { backgroundColor: colors.primaryLight }]}>
+                                <IconSymbol name="lightbulb.fill" size={16} color={colors.primary} />
+                                <Text style={[styles.tipText, { color: colors.primary }]}>
+                                    उदाहरण / Example: {currentField.placeholder}
+                                </Text>
+                            </View>
                         )}
                     </Card>
 
-                    {/* Quick Tips */}
-                    {currentField?.placeholder && (
-                        <View style={[styles.tipContainer, { backgroundColor: colors.primaryLight }]}>
-                            <IconSymbol name="lightbulb.fill" size={16} color={colors.primary} />
-                            <Text style={[styles.tipText, { color: colors.primary }]}>
-                                Example: {currentField.placeholder}
-                            </Text>
+                    {/* Capital Letters Warning for Name Fields */}
+                    {(currentField?.id.includes('name') || currentField?.id === 'care_of') && (
+                        <View style={[styles.warningBanner, { backgroundColor: '#FFF3CD', borderColor: '#FFE69C' }]}>
+                            <Text style={styles.warningIcon}>⚠️</Text>
+                            <View>
+                                <Text style={[styles.warningTextEnglish, { color: '#856404' }]}>
+                                    Use CAPITAL LETTERS only
+                                </Text>
+                                <Text style={[styles.warningTextHindi, { color: '#856404' }]}>
+                                    केवल बड़े अक्षर (CAPITAL LETTERS) लिखें
+                                </Text>
+                            </View>
                         </View>
                     )}
                 </ScrollView>
 
                 {/* Bottom Actions */}
-                <View style={[styles.bottomActions, { borderTopColor: colors.border }]}>
+                <View style={[styles.bottomActions, { borderTopColor: colors.border, backgroundColor: colors.surface }]}>
+                    {/* Skip button for optional fields */}
+                    {!currentField?.required && currentStep < totalSteps - 1 && (
+                        <TouchableOpacity
+                            onPress={() => {
+                                setValidationError(null);
+                                setCurrentStep(currentStep + 1);
+                            }}
+                            style={styles.skipButton}
+                        >
+                            <Text style={[styles.skipText, { color: colors.textSecondary }]}>
+                                छोड़ें / Skip →
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
                     <Button
-                        title={currentStep === totalSteps - 1 ? 'Generate Form' : 'Next'}
+                        title={currentStep === totalSteps - 1
+                            ? (language === 'hi' ? 'फॉर्म बनाएं' : 'Generate Form')
+                            : (language === 'hi' ? 'अगला' : 'Next')
+                        }
                         onPress={handleNext}
                         loading={isGenerating}
                         fullWidth
                         size="lg"
+                        disabled={!!validationError}
                         icon={
                             !isGenerating && (
                                 <IconSymbol
-                                    name={currentStep === totalSteps - 1 ? 'wand.and.stars' : 'arrow.right'}
+                                    name={currentStep === totalSteps - 1 ? 'checkmark.circle.fill' : 'arrow.right'}
                                     size={20}
                                     color="#FFFFFF"
                                 />
@@ -272,28 +477,31 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
     },
-    headerTitle: {
-        fontSize: FontSize.lg,
+    headerSubtitle: {
+        fontSize: FontSize.md,
         fontWeight: '600',
     },
-    headerSubtitle: {
-        fontSize: FontSize.sm,
+    langToggle: {
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.sm,
+        borderRadius: BorderRadius.md,
     },
-    headerRight: {
-        width: 40,
+    langToggleText: {
+        fontSize: FontSize.sm,
+        fontWeight: '700',
     },
     progressContainer: {
         paddingHorizontal: Spacing.lg,
         marginBottom: Spacing.md,
     },
     progressTrack: {
-        height: 4,
-        borderRadius: 2,
+        height: 6,
+        borderRadius: 3,
         overflow: 'hidden',
     },
     progressFill: {
         height: '100%',
-        borderRadius: 2,
+        borderRadius: 3,
     },
     scrollView: {
         flex: 1,
@@ -302,46 +510,81 @@ const styles = StyleSheet.create({
         padding: Spacing.lg,
     },
     fieldCard: {
-        alignItems: 'center',
-        paddingVertical: Spacing.xl,
+        padding: Spacing.lg,
     },
-    fieldIconContainer: {
-        width: 64,
-        height: 64,
-        borderRadius: BorderRadius.lg,
-        alignItems: 'center',
-        justifyContent: 'center',
+    labelContainer: {
         marginBottom: Spacing.lg,
     },
-    fieldLabel: {
+    labelEnglish: {
         fontSize: FontSize.xl,
-        fontWeight: '600',
-        textAlign: 'center',
-        marginBottom: Spacing.lg,
-        paddingHorizontal: Spacing.md,
+        fontWeight: '700',
+        marginBottom: Spacing.xs,
     },
-    inputContainer: {
-        width: '100%',
-        marginBottom: 0,
+    labelHindi: {
+        fontSize: FontSize.md,
+        marginBottom: Spacing.sm,
+    },
+    requiredBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.sm,
+    },
+    requiredText: {
+        fontSize: FontSize.xs,
+        fontWeight: '600',
+    },
+    optionalBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: Spacing.sm,
+        paddingVertical: Spacing.xs,
+        borderRadius: BorderRadius.sm,
+    },
+    optionalText: {
+        fontSize: FontSize.xs,
+    },
+    input: {
+        borderWidth: 2,
+        borderRadius: BorderRadius.md,
+        paddingHorizontal: Spacing.md,
+        paddingVertical: Spacing.md,
+        fontSize: FontSize.lg,
+        fontWeight: '600',
     },
     optionsContainer: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'center',
         gap: Spacing.sm,
-        width: '100%',
     },
     optionButton: {
         paddingVertical: Spacing.md,
         paddingHorizontal: Spacing.lg,
         borderRadius: BorderRadius.md,
-        borderWidth: 1.5,
+        borderWidth: 2,
         minWidth: 100,
         alignItems: 'center',
     },
     optionText: {
         fontSize: FontSize.md,
-        fontWeight: '500',
+        fontWeight: '600',
+    },
+    errorContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        padding: Spacing.md,
+        borderRadius: BorderRadius.md,
+        marginTop: Spacing.md,
+        gap: Spacing.sm,
+    },
+    errorTextContainer: {
+        flex: 1,
+    },
+    errorTextEnglish: {
+        fontSize: FontSize.sm,
+        fontWeight: '600',
+    },
+    errorTextHindi: {
+        fontSize: FontSize.xs,
     },
     tipContainer: {
         flexDirection: 'row',
@@ -355,9 +598,35 @@ const styles = StyleSheet.create({
         fontSize: FontSize.sm,
         flex: 1,
     },
+    warningBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: Spacing.md,
+        borderRadius: BorderRadius.md,
+        marginTop: Spacing.md,
+        borderWidth: 1,
+        gap: Spacing.sm,
+    },
+    warningIcon: {
+        fontSize: 20,
+    },
+    warningTextHindi: {
+        fontSize: FontSize.sm,
+        fontWeight: '600',
+    },
+    warningTextEnglish: {
+        fontSize: FontSize.xs,
+    },
     bottomActions: {
         padding: Spacing.lg,
         borderTopWidth: 1,
+    },
+    skipButton: {
+        alignItems: 'center',
+        paddingBottom: Spacing.sm,
+    },
+    skipText: {
+        fontSize: FontSize.sm,
     },
     loadingContainer: {
         flex: 1,
@@ -366,5 +635,23 @@ const styles = StyleSheet.create({
     },
     loadingText: {
         fontSize: FontSize.md,
+    },
+    aiIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginHorizontal: Spacing.lg,
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.md,
+        borderRadius: BorderRadius.md,
+        marginBottom: Spacing.sm,
+    },
+    aiIndicatorIcon: {
+        fontSize: 16,
+        marginRight: Spacing.xs,
+    },
+    aiIndicatorText: {
+        fontSize: FontSize.sm,
+        fontWeight: '600',
     },
 });
