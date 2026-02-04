@@ -212,54 +212,6 @@ export default function HomeScreen() {
             </View>
           </Card>
 
-          {/* AI Features Card - Show when AI is enabled */}
-          {aiAssistEnabled && (
-            <Card style={[styles.infoCard, { borderLeftWidth: 4, borderLeftColor: colors.success }]}>
-              <View style={styles.infoHeader}>
-                <Text style={styles.aiFeatureEmoji}>✨</Text>
-                <View>
-                  <Text style={[styles.infoTitle, { color: colors.success }]}>
-                    {language === 'hi' ? 'AI क्या करेगा?' : 'What AI will do?'}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.reasonsList}>
-                <View style={styles.reasonItem}>
-                  <Text style={styles.reasonBullet}>•</Text>
-                  <Text style={[styles.reasonText, { color: colors.text }]}>
-                    {language === 'hi'
-                      ? 'नाम को सही CAPITAL LETTERS में बदलेगा'
-                      : 'Convert names to proper CAPITAL LETTERS'
-                    }
-                  </Text>
-                </View>
-                <View style={styles.reasonItem}>
-                  <Text style={styles.reasonBullet}>•</Text>
-                  <Text style={[styles.reasonText, { color: colors.text }]}>
-                    {language === 'hi'
-                      ? 'पता को सही format में लिखेगा'
-                      : 'Format address properly'
-                    }
-                  </Text>
-                </View>
-                <View style={styles.reasonItem}>
-                  <Text style={styles.reasonBullet}>•</Text>
-                  <Text style={[styles.reasonText, { color: colors.text }]}>
-                    {language === 'hi'
-                      ? 'Initials को पूरे नाम में expand करेगा'
-                      : 'Expand initials to full names'
-                    }
-                  </Text>
-                </View>
-              </View>
-              <Text style={[styles.aiNote, { color: colors.textMuted }]}>
-                {language === 'hi'
-                  ? '⚡ इंटरनेट आवश्यक • कम डेटा उपयोग'
-                  : '⚡ Requires internet • Low data usage'
-                }
-              </Text>
-            </Card>
-          )}
 
           {/* Info Card: Why Forms Get Rejected */}
           {/* <Card style={[styles.infoCard, { borderLeftWidth: 4, borderLeftColor: colors.warning }]}>

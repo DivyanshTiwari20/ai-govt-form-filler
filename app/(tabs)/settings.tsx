@@ -84,7 +84,7 @@ export default function SettingsScreen() {
                                 showChevron
                                 onPress={() => Alert.alert(
                                     'How to Use',
-                                    '1. Upload or take a photo of any government form\n\n2. AI will analyze and identify all fields\n\n3. Answer the questions step by step\n\n4. Get a generated image of the filled form\n\n5. Use this as a reference to fill the physical form'
+                                    '1. Answer the questions step by step\n\n2. Get a generated image of the filled form\n\n3. Use this as a reference to fill the physical form'
                                 )}
                             />
                             <Divider colors={colors} />
