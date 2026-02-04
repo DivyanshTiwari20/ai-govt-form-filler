@@ -3,7 +3,7 @@
  * Display filled form with readiness score, copy buttons, and download
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -18,9 +18,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library';
 import * as Clipboard from 'expo-clipboard';
-import ViewShot from 'react-native-view-shot';
+import * as FileSystem from 'expo-file-system/legacy';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Button } from '@/components/ui/Button';
@@ -37,7 +36,7 @@ export default function ResultScreen() {
     const colors = Colors.light;
     const router = useRouter();
     const params = useLocalSearchParams();
-    const viewShotRef = useRef<ViewShot>(null);
+    const formContainerRef = useRef<View>(null);
 
     const [isSaving, setIsSaving] = useState(false);
     const [isSharing, setIsSharing] = useState(false);
@@ -86,40 +85,113 @@ export default function ResultScreen() {
         setTimeout(() => setCopiedField(null), 2000);
     };
 
+    const webViewRef = useRef<WebView>(null);
+    const [pendingAction, setPendingAction] = useState<'save' | 'share' | null>(null);
+    const [isFormReady, setIsFormReady] = useState(false);
+
+    // Handle messages from WebView
+    const handleWebViewMessage = useCallback(async (event: any) => {
+        try {
+            const message = JSON.parse(event.nativeEvent.data);
+
+            if (message.type === 'formReady') {
+                setIsFormReady(true);
+                setIsLoading(false);
+            } else if (message.type === 'formCapture' && message.data) {
+                // Convert base64 to file and save
+                const base64Data = message.data.replace(/^data:image\/png;base64,/, '');
+                const fileName = `form_${formType}_${Date.now()}.png`;
+                const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
+
+                try {
+                    // Write base64 data to file using traditional API
+                    await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+                        encoding: FileSystem.EncodingType.Base64,
+                    });
+
+                    // Use Sharing for both save and share (works without MediaLibrary permissions in Expo Go)
+                    const isAvailable = await Sharing.isAvailableAsync();
+                    if (isAvailable) {
+                        if (pendingAction === 'save') {
+                            // Show share dialog - user can save to gallery from here
+                            await Sharing.shareAsync(fileUri, {
+                                mimeType: 'image/png',
+                                dialogTitle: 'Save Form / फॉर्म सेव करें',
+                                UTI: 'public.png',
+                            });
+                            Alert.alert(
+                                '✓ Done!',
+                                'फॉर्म शेयर शीट में खुल गया। "Save to Gallery" चुनें।\nForm opened in share sheet. Choose "Save to Gallery".',
+                                [{ text: 'ठीक है / OK' }]
+                            );
+                        } else if (pendingAction === 'share') {
+                            await Sharing.shareAsync(fileUri, {
+                                mimeType: 'image/png',
+                                dialogTitle: `Share ${formName}`,
+                            });
+                        }
+                    } else {
+                        Alert.alert('Error', 'Sharing is not available on this device');
+                    }
+                } catch (fileError: any) {
+                    console.error('File operation error:', fileError);
+                    Alert.alert(
+                        'Error / त्रुटि',
+                        `फाइल ऑपरेशन विफल।\nFile operation failed.\n${fileError.message || ''}`,
+                        [{ text: 'OK' }]
+                    );
+                }
+
+                setPendingAction(null);
+                setIsSaving(false);
+                setIsSharing(false);
+            } else if (message.type === 'captureError') {
+                console.error('WebView capture error:', message.message);
+                Alert.alert(
+                    'Error / त्रुटि',
+                    'फॉर्म कैप्चर नहीं हो सका।\nCould not capture form.',
+                    [{ text: 'OK' }]
+                );
+                setPendingAction(null);
+                setIsSaving(false);
+                setIsSharing(false);
+            }
+        } catch (error) {
+            console.error('Error handling WebView message:', error);
+        }
+    }, [formType, formName, pendingAction]);
+
+    // Trigger form capture in WebView
+    const triggerFormCapture = useCallback((action: 'save' | 'share') => {
+        if (webViewRef.current) {
+            setPendingAction(action);
+            webViewRef.current.injectJavaScript('captureForm(); true;');
+        }
+    }, []);
+
     const handleSaveToGallery = async () => {
         setIsSaving(true);
         try {
-            const { status } = await MediaLibrary.requestPermissionsAsync();
-
-            if (status !== 'granted') {
+            // First check if we're on the form view
+            if (showDetails) {
                 Alert.alert(
-                    'Permission Required',
-                    'Please grant permission to save images to your gallery.',
-                    [{ text: 'OK' }]
+                    'फॉर्म देखें / View Form',
+                    'कृपया पहले "Form / फॉर्म देखें" पर क्लिक करें\nPlease switch to "Form" view first to save.',
+                    [{ text: 'ठीक है / OK' }]
                 );
                 setIsSaving(false);
                 return;
             }
 
-            if (viewShotRef.current && viewShotRef.current.capture) {
-                const uri = await viewShotRef.current.capture();
-
-                if (uri) {
-                    const asset = await MediaLibrary.createAssetAsync(uri);
-
-                    if (asset) {
-                        Alert.alert(
-                            '✓ सेव हो गया!',
-                            'फॉर्म आपकी गैलरी में सेव हो गया है।\nForm saved to your gallery.',
-                            [{ text: 'ठीक है / OK' }]
-                        );
-                    }
-                }
-            }
+            // Trigger WebView capture (no permission needed - using Sharing instead of MediaLibrary)
+            triggerFormCapture('save');
         } catch (error: any) {
             console.error('Save error:', error);
-            Alert.alert('Error', 'Could not save to gallery. Try using Share instead.');
-        } finally {
+            Alert.alert(
+                'Error / त्रुटि',
+                `सेव नहीं हो सका।\nCould not save.\n${error.message || ''}`,
+                [{ text: 'OK' }]
+            );
             setIsSaving(false);
         }
     };
@@ -127,23 +199,26 @@ export default function ResultScreen() {
     const handleShare = async () => {
         setIsSharing(true);
         try {
-            if (viewShotRef.current && viewShotRef.current.capture) {
-                const uri = await viewShotRef.current.capture();
-
-                if (uri) {
-                    const isAvailable = await Sharing.isAvailableAsync();
-                    if (isAvailable) {
-                        await Sharing.shareAsync(uri, {
-                            mimeType: 'image/png',
-                            dialogTitle: 'Share Your Aadhaar Form',
-                        });
-                    }
-                }
+            // First check if we're on the form view
+            if (showDetails) {
+                Alert.alert(
+                    'फॉर्म देखें / View Form',
+                    'कृपया पहले "Form / फॉर्म देखें" पर क्लिक करें\nPlease switch to "Form" view first to share.',
+                    [{ text: 'ठीक है / OK' }]
+                );
+                setIsSharing(false);
+                return;
             }
+
+            // Trigger WebView capture for sharing
+            triggerFormCapture('share');
         } catch (error: any) {
             console.error('Share error:', error);
-            Alert.alert('Error', 'Failed to share. Please try again.');
-        } finally {
+            Alert.alert(
+                'Error / त्रुटि',
+                `शेयर नहीं हो सका। पुन: प्रयास करें।\nFailed to share. Please try again.\n${error.message || ''}`,
+                [{ text: 'OK' }]
+            );
             setIsSharing(false);
         }
     };
@@ -317,26 +392,26 @@ export default function ResultScreen() {
                             </View>
                         )}
 
-                        <ViewShot
-                            ref={viewShotRef}
-                            options={{
-                                format: 'png',
-                                quality: 1,
-                                result: 'tmpfile',
-                            }}
+                        <View
+                            ref={formContainerRef}
                             style={styles.viewShot}
+                            collapsable={false}
+                            renderToHardwareTextureAndroid={true}
                         >
                             <WebView
+                                ref={webViewRef}
                                 source={{ html: formHTML }}
                                 style={styles.webview}
                                 scrollEnabled={false}
                                 showsVerticalScrollIndicator={false}
                                 onLoadEnd={() => setIsLoading(false)}
+                                onMessage={handleWebViewMessage}
                                 originWhitelist={['*']}
                                 scalesPageToFit={false}
                                 javaScriptEnabled={true}
+                                androidLayerType="hardware"
                             />
-                        </ViewShot>
+                        </View>
                     </View>
                 )}
             </ScrollView>

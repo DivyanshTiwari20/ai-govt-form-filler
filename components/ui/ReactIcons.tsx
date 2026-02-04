@@ -35,6 +35,28 @@ export function RiChatAiFill({ size = 24, color = '#000000', style }: IconProps)
     );
 }
 
+// RiChatSmileAiLine icon from Remix Icons (chat with smile)
+export function RiChatSmileAiLine({ size = 24, color = '#000000', style }: IconProps) {
+    return (
+        <View style={[styles.iconContainer, { width: size, height: size }, style]}>
+            <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+                <Path d="M7.29117 20.8242L2 22L3.17581 16.7088C2.42544 15.3056 2 13.7025 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C10.2975 22 8.6944 21.5746 7.29117 20.8242ZM7.58075 18.711L8.23428 19.0605C9.38248 19.6745 10.6655 20 12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 13.3345 4.32549 14.6175 4.93949 15.7657L5.28896 16.4192L4.63416 19.3658L7.58075 18.711ZM7 12H9C9 13.6569 10.3431 15 12 15C13.6569 15 15 13.6569 15 12H17C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12Z" />
+            </Svg>
+        </View>
+    );
+}
+
+// RiChatSmileAiFill icon from Remix Icons (chat with smile - filled)
+export function RiChatSmileAiFill({ size = 24, color = '#000000', style }: IconProps) {
+    return (
+        <View style={[styles.iconContainer, { width: size, height: size }, style]}>
+            <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+                <Path d="M7.29117 20.8242L2 22L3.17581 16.7088C2.42544 15.3056 2 13.7025 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22C10.2975 22 8.6944 21.5746 7.29117 20.8242ZM7 12C7 14.7614 9.23858 17 12 17C14.7614 17 17 14.7614 17 12H15C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12H7Z" />
+            </Svg>
+        </View>
+    );
+}
+
 // RiRobot2Line icon from Remix Icons
 export function RiRobot2Line({ size = 24, color = '#000000', style }: IconProps) {
     return (
@@ -107,6 +129,28 @@ export function RiArrowRightSLine({ size = 24, color = '#000000', style }: IconP
         <View style={[styles.iconContainer, { width: size, height: size }, style]}>
             <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
                 <Path d="M13.1717 12.0007L8.22192 7.05093L9.63614 5.63672L16.0001 12.0007L9.63614 18.3646L8.22192 16.9504L13.1717 12.0007Z" />
+            </Svg>
+        </View>
+    );
+}
+
+// RiRefreshLine icon from Remix Icons (for Updates)
+export function RiRefreshLine({ size = 24, color = '#000000', style }: IconProps) {
+    return (
+        <View style={[styles.iconContainer, { width: size, height: size }, style]}>
+            <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+                <Path d="M5.46257 4.43262C7.21556 2.91688 9.5007 2 12 2C17.5228 2 22 6.47715 22 12C22 14.1361 21.3302 16.1158 20.1892 17.7406L17 12H20C20 7.58172 16.4183 4 12 4C9.84982 4 7.89777 4.84827 6.46023 6.22842L5.46257 4.43262ZM18.5374 19.5674C16.7844 21.0831 14.4993 22 12 22C6.47715 22 2 17.5228 2 12C2 9.86386 2.66979 7.88416 3.8108 6.25944L7 12H4C4 16.4183 7.58172 20 12 20C14.1502 20 16.1022 19.1517 17.5398 17.7716L18.5374 19.5674Z" />
+            </Svg>
+        </View>
+    );
+}
+
+// RiStarLine icon from Remix Icons (for Rate App)
+export function RiStarLine({ size = 24, color = '#000000', style }: IconProps) {
+    return (
+        <View style={[styles.iconContainer, { width: size, height: size }, style]}>
+            <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+                <Path d="M12.0006 18.26L4.94715 22.2082L6.52248 14.2799L0.587891 8.7918L8.61493 7.84006L12.0006 0.5L15.3862 7.84006L23.4132 8.7918L17.4787 14.2799L19.054 22.2082L12.0006 18.26ZM12.0006 15.968L16.2473 18.3451L15.2988 13.5717L18.8719 10.2674L14.039 9.69434L12.0006 5.27502L9.96214 9.69434L5.12921 10.2674L8.70231 13.5717L7.75383 18.3451L12.0006 15.968Z" />
             </Svg>
         </View>
     );

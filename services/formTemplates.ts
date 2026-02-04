@@ -179,6 +179,44 @@ export function generateAadhaarFormHTML(data: Record<string, string>): string {
             font-weight: bold;
         }
     </style>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+        // Function to capture the form as image and send to React Native
+        function captureForm() {
+            const form = document.querySelector('.form');
+            html2canvas(form, {
+                useCORS: true,
+                allowTaint: true,
+                scale: 2,
+                logging: false,
+                backgroundColor: '#ffffff'
+            }).then(function(canvas) {
+                var dataUrl = canvas.toDataURL('image/png');
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'formCapture',
+                        data: dataUrl
+                    }));
+                }
+            }).catch(function(err) {
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'captureError',
+                        message: err.toString()
+                    }));
+                }
+            });
+        }
+        
+        // Notify when form is ready
+        window.onload = function() {
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'formReady'
+                }));
+            }
+        };
+    </script>
 </head>
 <body>
     <div class="form">

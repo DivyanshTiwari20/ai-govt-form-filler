@@ -3,7 +3,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { RiChatAiLine, RiChatAiFill } from '@/components/ui/ReactIcons';
+import { RiChatSmileAiLine, RiChatSmileAiFill } from '@/components/ui/ReactIcons';
 import { HapticTab } from '@/components/haptic-tab';
 import { Colors } from '@/constants/theme';
 
@@ -61,9 +61,9 @@ export default function TabLayout() {
           title: 'AI Chat',
           tabBarIcon: ({ color, focused }) => (
             focused ? (
-              <RiChatAiFill size={24} color={color} />
+              <RiChatSmileAiFill size={24} color={color} />
             ) : (
-              <RiChatAiLine size={24} color={color} />
+              <RiChatSmileAiLine size={24} color={color} />
             )
           ),
         }}

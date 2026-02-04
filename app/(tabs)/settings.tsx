@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card } from '@/components/ui/Card';
 import { Colors, Spacing, FontSize, BorderRadius } from '@/constants/theme';
-import { RiInformationLine, RiMailLine, RiHistoryLine, RiArrowRightSLine } from '@/components/ui/ReactIcons';
+import { RiInformationLine, RiMailLine, RiHistoryLine, RiArrowRightSLine, RiRefreshLine, RiStarLine } from '@/components/ui/ReactIcons';
 
 export default function SettingsScreen() {
     const colors = Colors.light; // Force light mode
@@ -94,6 +94,36 @@ export default function SettingsScreen() {
                                 colors={colors}
                                 showChevron
                             // onPress={() => Linking.openURL('mailto:support@example.com')}
+                            />
+                        </Card>
+                    </View>
+
+                    {/* More Section */}
+                    <View style={styles.section}>
+                        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                            MORE
+                        </Text>
+                        <Card padding="none">
+                            <SettingsItem
+                                icon={RiRefreshLine}
+                                title="Check for Updates"
+                                colors={colors}
+                                showChevron
+                                onPress={() => Alert.alert(
+                                    'Updates',
+                                    'You are using the latest version of the app!'
+                                )}
+                            />
+                            <Divider colors={colors} />
+                            <SettingsItem
+                                icon={RiStarLine}
+                                title="Rate this App"
+                                colors={colors}
+                                showChevron
+                                onPress={() => Alert.alert(
+                                    'Rate App',
+                                    'Thank you for using our app! Rating feature coming soon.'
+                                )}
                             />
                         </Card>
                     </View>

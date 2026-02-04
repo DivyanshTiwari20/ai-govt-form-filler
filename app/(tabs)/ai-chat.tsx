@@ -28,10 +28,10 @@ interface Message {
 }
 
 const QUICK_QUESTIONS = [
-    { hi: 'आधार फॉर्म कैसे भरें?', en: 'How to fill Aadhaar form?' },
-    { hi: 'कौन से दस्तावेज़ चाहिए?', en: 'What documents needed?' },
-    { hi: 'फॉर्म रिजेक्ट क्यों होता है?', en: 'Why forms get rejected?' },
-    { hi: 'नाम कैसे लिखें?', en: 'How to write name?' },
+    { hi: 'आधार कार्ड कैसे बनवाएं?', en: 'How to apply for Aadhaar?' },
+    { hi: 'PAN कार्ड के लिए क्या डॉक्युमेंट्स?', en: 'Documents for PAN card?' },
+    { hi: 'पासपोर्ट अप्लाई कैसे करें?', en: 'How to apply for passport?' },
+    { hi: 'वोटर ID में नाम कैसे सुधारें?', en: 'How to correct name in Voter ID?' },
 ];
 
 export default function AIChatScreen() {
@@ -40,7 +40,7 @@ export default function AIChatScreen() {
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
-            text: 'Hello! I can help you with:\n• How to fill Aadhaar form\n• Required documents\n• Common mistakes\n• Name/address formatting\n\nनमस्ते! 🙏 मैं आपका AI सहायक हूं।',
+            text: '🙏 नमस्ते! मैं आपका AI सहायक हूं।\n\nI can help you with:\n• Aadhaar, PAN, Passport forms\n• Voter ID, Driving License\n• Any government form questions\n• Documents required\n• Common mistakes to avoid\n\nकिसी भी भाषा में पूछें - Hindi, English या Hinglish!',
             isUser: false,
             timestamp: new Date(),
         }
@@ -60,27 +60,38 @@ export default function AIChatScreen() {
     const getOfflineResponse = (question: string): string => {
         const q = question.toLowerCase();
 
-        if (q.includes('fill') || q.includes('भर') || q.includes('kaise') || q.includes('कैसे')) {
-            return '📝 आधार फॉर्म भरने के टिप्स:\n\n1. सभी नाम CAPITAL LETTERS में लिखें\n2. जन्म तिथि DD/MM/YYYY में\n3. पता पूरा लिखें\n4. मोबाइल 10 अंकों का\n\nTips:\n• Use CAPITAL LETTERS\n• Date: DD/MM/YYYY\n• Complete address\n• 10 digit mobile';
+        // Aadhaar related
+        if (q.includes('aadhaar') || q.includes('आधार') || q.includes('aadhar')) {
+            return '📝 आधार कार्ड के लिए:\n\n✅ Required Documents:\n• Identity Proof (Passport, Voter ID, PAN)\n• Address Proof (Utility Bill, Bank Statement)\n• DOB Proof (Birth Certificate)\n\n📍 Visit nearest Aadhaar Seva Kendra\n💰 Free enrollment, ₹50 for updates\n\nTip: Use CAPITAL LETTERS in form!';
         }
 
+        // PAN related
+        if (q.includes('pan') || q.includes('पैन') || q.includes('पेन')) {
+            return '📄 PAN Card के लिए:\n\n✅ Documents Required:\n• ID Proof (Aadhaar, Passport, Voter ID)\n• Address Proof\n• DOB Proof\n• 2 Passport Photos\n\n🌐 Apply at: incometax.gov.in\n💰 Fee: ₹107 (Indian), ₹1,020 (Foreign)\n\nProcessing: 15-20 days';
+        }
+
+        // Passport related
+        if (q.includes('passport') || q.includes('पासपोर्ट')) {
+            return '🛂 Passport के लिए:\n\n✅ Documents:\n• Aadhaar Card\n• PAN Card (optional)\n• Address Proof\n• DOB Proof\n\n📍 Apply: passportindia.gov.in\n💰 Normal: ₹1,500 | Tatkal: ₹3,500\n\nTip: Book appointment online first!';
+        }
+
+        // Voter ID related
+        if (q.includes('voter') || q.includes('वोटर') || q.includes('election') || q.includes('चुनाव')) {
+            return '🗳️ Voter ID Card के लिए:\n\n✅ Documents:\n• Age Proof (10th Certificate, Birth Certificate)\n• Address Proof\n• Passport Photo\n\n🌐 Apply: voters.eci.gov.in\n📱 Or use "Voter Helpline" app\n\n✅ Free of cost!';
+        }
+
+        // Driving License related
+        if (q.includes('driving') || q.includes('license') || q.includes('लाइसेंस') || q.includes('dl')) {
+            return '🚗 Driving License के लिए:\n\n✅ Documents:\n• Aadhaar Card\n• Address Proof\n• Age Proof\n• Medical Certificate (for transport)\n\n📍 Apply: parivahan.gov.in\n💰 Fee: ₹200-₹1,000\n\nFirst get Learner License, then DL after 30 days!';
+        }
+
+        // Documents related
         if (q.includes('document') || q.includes('दस्तावेज़') || q.includes('proof') || q.includes('कागज')) {
-            return '📄 आवश्यक दस्तावेज़:\n\nपहचान प्रमाण:\n• पासपोर्ट, वोटर ID, PAN\n\nपता प्रमाण:\n• बिजली बिल, बैंक स्टेटमेंट\n\nजन्म तिथि:\n• जन्म प्रमाण पत्र, स्कूल सर्टिफिकेट';
+            return '📄 Common Documents for Govt Forms:\n\n🆔 ID Proof:\n• Aadhaar, PAN, Passport, Voter ID\n\n🏠 Address Proof:\n• Utility Bills, Bank Statement, Aadhaar\n\n📅 DOB Proof:\n• Birth Certificate, 10th Marksheet, Passport';
         }
 
-        if (q.includes('reject') || q.includes('रिजेक्ट') || q.includes('mistake') || q.includes('गलती')) {
-            return '❌ फॉर्म रिजेक्ट होने के कारण:\n\n1. छोटे अक्षरों में नाम\n2. अधूरा पता\n3. गलत date format\n4. Initials का use\n\n✅ सही तरीका:\n• CAPITAL LETTERS\n• पूरा नाम (RAMESH KUMAR)\n• दस्तावेज़ से मिलान करें';
-        }
-
-        if (q.includes('name') || q.includes('नाम') || q.includes('naam')) {
-            return '✍️ नाम लिखने का तरीका:\n\n❌ गलत:\n• r. kumar\n• ramesh kumar\n\n✅ सही:\n• RAMESH KUMAR SINGH\n\nयाद रखें:\n• CAPITAL में लिखें\n• पूरा नाम, initials नहीं\n• दस्तावेज़ से match करें';
-        }
-
-        if (q.includes('address') || q.includes('पता') || q.includes('pata')) {
-            return '🏠 पता लिखने का तरीका:\n\n✅ सही format:\nHOUSE NO 123\nSTREET NAME\nAREA/LOCALITY\nCITY - PINCODE\nSTATE\n\nयाद रखें:\n• CAPITAL LETTERS में\n• पूरा पता लिखें\n• PIN code 6 अंकों का';
-        }
-
-        return '🙏 मैं आपकी मदद के लिए हाज़िर हूं!\n\nआप पूछ सकते हैं:\n• फॉर्म कैसे भरें\n• दस्तावेज़ क्या चाहिए\n• गलतियाँ कैसे बचें\n• नाम/पता कैसे लिखें\n\nAsk me anything about Aadhaar forms!';
+        // General / Default
+        return '🙏 मैं इन सब में मदद कर सकता हूं:\n\n• Aadhaar Card\n• PAN Card\n• Passport\n• Voter ID\n• Driving License\n• Other govt forms\n\nAsk specific questions!\nकोई भी सवाल पूछें - Hindi या English में!';
     };
 
     const getAIResponse = async (question: string): Promise<string> => {
@@ -92,6 +103,33 @@ export default function AIChatScreen() {
         }
 
         try {
+            const q = question.toLowerCase();
+            // Check if user wants more details
+            const wantsDetail = q.includes('detail') || q.includes('विस्तार') ||
+                q.includes('explain') || q.includes('more') ||
+                q.includes('step by step') || q.includes('procedure') ||
+                q.includes('process') || q.includes('how to');
+
+            const systemPrompt = wantsDetail
+                ? `You are a helpful AI assistant for Indian government forms. Give a detailed step-by-step answer with required documents, fees, websites, and tips.
+                
+Respond in the SAME LANGUAGE the user asks in (Hindi/English/Hinglish).
+Keep response 150-200 words. Use emojis for better readability.
+
+User Question: "${question}"
+
+Give a complete, helpful response:`
+
+                : `You are a helpful AI assistant for Indian government forms (Aadhaar, PAN, Passport, Voter ID, etc.).
+
+Give a SHORT and SIMPLE answer (50-80 words maximum).
+Respond in the SAME LANGUAGE the user asks in (Hindi/English/Hinglish).
+Use 1-2 emojis only.
+
+User Question: "${question}"
+
+Give a brief, friendly response:`;
+
             const response = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
                 {
@@ -100,18 +138,11 @@ export default function AIChatScreen() {
                     body: JSON.stringify({
                         contents: [{
                             parts: [{
-                                text: `You are a helpful assistant for filling Indian Aadhaar forms.
-Answer in Hinglish (Hindi + English mix).
-Keep answers short and practical (max 150 words).
-Focus on: correct formatting, documents, common mistakes, tips.
-
-Question: "${question}"
-
-Give a helpful, friendly response.`
+                                text: systemPrompt
                             }]
                         }],
                         generationConfig: {
-                            maxOutputTokens: 250,
+                            maxOutputTokens: wantsDetail ? 400 : 150,
                             temperature: 0.7
                         }
                     })
